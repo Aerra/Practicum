@@ -2,9 +2,10 @@
 #include "kernels.h"
 
 // Conjugate Gradient algorithm realization
-void Matrices::Conjugate_Gradient(double tol, bool debug) {
+void Matrices::Conjugate_Gradient(double tol, double &twcl, double &dot_twcl, \
+								double &axpby_twcl, double &SpMV_twcl, \
+								double &VpV_twcl, bool debug) {
     bool convergence = false;
-    int counter = 1;
 
     double *r = new double[N1];
     for (int i = 0; i < N1; i++)
@@ -16,35 +17,37 @@ void Matrices::Conjugate_Gradient(double tol, bool debug) {
     double po = 0;
     double *q = new double[N1];
 
+    double tbeg = omp_get_wtime();
     do {
-        kernel_VpV(rev_diag, r, z, N1);
-        po = kernel_dot(N1, r, z);
-        if (counter == 1) {
+        kernel_VpV(rev_diag, r, z, N1, VpV_twcl);
+        po = kernel_dot(N1, r, z, dot_twcl);
+        if (iterations == 1) {
         //  p = z;
-            kernel_axpby(N1, p, z, 0, 1);
+            kernel_axpby(N1, p, z, 0, 1, axpby_twcl);
         } else {
             //double beta = po / po_0;
             //kernel_axpby(N1, p, z, beta, 1);
-            kernel_axpby(N1, p, z, po / po_0, 1);
+            kernel_axpby(N1, p, z, po / po_0, 1, axpby_twcl);
         }
-        kernel_SpMV(A, IA, JA, p, q, N1);
-        double alpha = po / kernel_dot(N1, p, q);
-        kernel_axpby(N1, x, p, 1, alpha);
-        kernel_axpby(N1, r, q, 1, -alpha);
+        kernel_SpMV(A, IA, JA, p, q, N1, SpMV_twcl);
+        double alpha = po / kernel_dot(N1, p, q, dot_twcl);
+        kernel_axpby(N1, x, p, 1, alpha, axpby_twcl);
+        kernel_axpby(N1, r, q, 1, -alpha, axpby_twcl);
         po_0 = po;
-        // if (po < tol || counter >= MAXITER)
+        // if (po < tol || iterations >= MAXITER)
 		if (po < tol)
             convergence = true;
         else
-            counter += 1;
+            iterations += 1;
 
 		if (debug) {
     		double res_i = kernel_L2_ResidentialRate(A, IA, JA, x, b, N1);
-        	std::cout << "After iter " << counter-1 << " res: " << res_i << "\n";
+        	std::cout << "After iter " << iterations-1 << " res: " << res_i << "\n";
 		}
 
     }
     while (!convergence);
+    twcl += omp_get_wtime() - tbeg;
 
     res = kernel_L2_ResidentialRate(A, IA, JA, x, b, N1);
 
@@ -64,7 +67,7 @@ void Matrices::Conjugate_Gradient(double tol, bool debug) {
 }
 
 // By already given IA and JA generate (fill) matrix A (CSR format)
-void Matrices::fill(bool debug) {
+void Matrices::fill(double &twcl, bool debug) {
     double tbeg = omp_get_wtime();
     #pragma omp parallel for    
     for (int i = 0; i < N1; i++) {
@@ -84,7 +87,6 @@ void Matrices::fill(bool debug) {
         rev_diag[i] = 1 / A[diag]; // M^(-1)
         b[i] = sin(i);
     }
-    double twcl = 0;
     twcl += omp_get_wtime() - tbeg;
 	if (debug) {
     	std::cout << "Fill time: " << twcl << "\n";

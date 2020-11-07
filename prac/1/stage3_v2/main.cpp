@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <iostream>
 #include <omp.h>
+#include <iomanip>
 #include "kernels.h"
 #include "ArgParser.h"
 #include "Matrices.h"
 #include "Graph.h"
 
-void print_info(Matrices *obj, bool verbose = false, std::string output_file = "") {
+void print_info(Matrices *obj, bool verbose = false, \
+			   	std::string output_file = "") {
 	if (verbose) {
 		std::cout << "IA: ";			
 		for (int i = 0; i < obj->N1 + 1; i++) {
@@ -17,6 +19,7 @@ void print_info(Matrices *obj, bool verbose = false, std::string output_file = "
 		for (int i = 0; i < obj->E1; i++) {
 				std::cout << obj->JA[i] << " ";
 		}		
+		std::cout << "E: " << obj->E1 << "\n";
 		std::cout << "\n";
 		std::cout << "N: " << obj->N1 << "\n";
 		std::cout << "A: ";			
@@ -76,6 +79,66 @@ void print_info(Matrices *obj, bool verbose = false, std::string output_file = "
 	}
 }
 
+void print_generate(int N, double time) {
+	std::cout << "+-------------------------------------+\n";
+	std::cout << "|                 GENERATE            |\n";
+	std::cout << "+-------------------------------------+\n";
+	std::cout << "| N (count vertices) |" << std::setw(16) << N << "|\n";
+	std::cout << "+-------------------------------------+\n";
+	std::cout << "| Wasted Time        |" << std::setw(15) << time << "s|\n";
+	std::cout << "+-------------------------------------+\n";
+}
+
+void print_fill(double time) {
+	std::cout << "+-------------------------------------+\n";
+	std::cout << "|               FILL                  |\n";
+	std::cout << "+-------------------------------------+\n";
+	std::cout << "| Wasted Time        |" << std::setw(15) << time << "s|\n";
+	std::cout << "+-------------------------------------+\n";
+}
+
+void print_solve(int iter, double res, double time, double dot_time, \
+			   	double axpby_time, double SpMV_time, double VpV_time) {
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "|                     SOLVE               |\n";
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "| Iterations             |" << std::setw(16) << iter << "|\n";
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "| ||Ax-b||               |" << std::setw(16) << res << "|\n";
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "| Wasted Time            |" << std::setw(15) << time << "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "| where:                                  |\n";
+	std::cout << "| 2*Iterations for dot   |" << std::setw(15) << dot_time 
+				<< "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	double av_dot = dot_time / (2 * iter);
+	std::cout << "| Average dot time       |" << std::setw(15)
+				<< av_dot << "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "| 3*Iterations for axpby |" << std::setw(15) << axpby_time
+				<< "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	double av_axpby = axpby_time / (3 * iter);
+	std::cout << "| Average axpby time     |" << std::setw(15)
+				<< av_axpby << "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "| 1*Iterations for SpMV  |" << std::setw(15) << SpMV_time
+				<< "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	double av_SpMV = SpMV_time / iter;
+	std::cout << "| Average SpMV time      |" << std::setw(15)
+				<< av_SpMV << "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	std::cout << "| 1*Iterations for VpV   |" << std::setw(15) << VpV_time
+				<< "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+	double av_VpV = VpV_time / iter;
+	std::cout << "| Average VpV time       |" << std::setw(15)
+				<< av_VpV << "s|\n";
+	std::cout << "+-----------------------------------------+\n";
+}
+
 int main(int argc, char *argv[]) {
 	// parse incoming arguments
 	ArgParser Parser;
@@ -86,18 +149,32 @@ int main(int argc, char *argv[]) {
 	
 	omp_set_num_threads(Parser.GetT());
 	// GENERATE STAGE
-	Graph A;
+	// start timing
+	double generate_time = 0;
+	Graph A((Parser.GetNx() + 1)*(Parser.GetNy() + 1));
 	
 	A.create_graph(Parser.GetNx(), Parser.GetNy(), Parser.GetK1(),
-					Parser.GetK2());
+					Parser.GetK2(), generate_time);
 	Matrices B(A.get_N(), A.get_E());
-	A.get_matrices(&B);
+	A.get_matrices(&B, generate_time, Parser.GetT());
+	print_generate(A.get_N(), generate_time);
 
 	// FILL STAGE
-	B.fill();
+	double fill_time = 0;
+	B.fill(fill_time);
+	print_fill(fill_time);
 
 	// SOLVE
-	B.Conjugate_Gradient(Parser.Gettol());
+	double solve_time = 0;
+	double dot_time = 0;
+	double axpby_time = 0;
+	double SpMV_time = 0;
+	double VpV_time = 0;
+
+	B.Conjugate_Gradient(Parser.Gettol(), solve_time, dot_time, axpby_time, 
+					SpMV_time, VpV_time);
+	print_solve(B.iterations, B.res, solve_time, dot_time, axpby_time, 
+				SpMV_time, VpV_time);
 
 	print_info(&B, Parser.GetVerbose(), Parser.GetOutput());
 	return 0;

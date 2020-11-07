@@ -12,6 +12,7 @@ struct Matrices {
     double *x; // solution vector
     double *rev_diag; // M^(-1) diagonal matrix for CG 
     double res; // L2-residual rate for solution
+	int iterations; // count of iterations for solver
     int N1; // matrices size (N1xN1)
     int E1; // JA length
     Matrices(int N, int E) {
@@ -24,6 +25,7 @@ struct Matrices {
         N1 = N;
         E1 = E;
         res = 0;
+		iterations = 1;
     };
     ~Matrices() {
         delete[] IA;
@@ -33,7 +35,8 @@ struct Matrices {
         delete[] x;
         delete[] rev_diag;
     };
-    void fill(bool=false); // debug = false
-    void Conjugate_Gradient(double, bool=false); // tol, debug = false
+    void fill(double &, bool=false); // debug = false double & for timings
+    void Conjugate_Gradient(double, double &, double &, double &, double &,
+							double &, bool=false); // tol, debug = false
 };
 

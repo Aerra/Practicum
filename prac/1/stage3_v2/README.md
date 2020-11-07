@@ -1,2 +1,3 @@
 Launch:
-g++ -O3 -fopenmp -Wall kernels.cpp ArgParser.cpp Matrices.cpp Graph.cpp main.cpp -o main
+g++ -Wall -O3 -fopenmp -pedantic ArgParser.cpp Graph.cpp kernels.cpp Matrices.cpp main.cpp -o main
+
