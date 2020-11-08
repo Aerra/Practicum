@@ -5,21 +5,21 @@
 
 struct Vertex {
 	int count = 0;
-	int neighbours[10];
+	int neighbours[7];
 };
 
 class Graph {
-    int N; // count of verteces
-    int E; // already x2 because current graph is directed graph
-    Vertex *Vertices; // array of vertices in graph
+    int N; // number of vertices
+    int E; // already x2 because current graph is a directed graph
 public:
+    Vertex *Vertices; // array of vertices in graph
     Graph(int N) {
 		N = N;
 		E = 0;
 		Vertices = new Vertex[N];
 	};
     ~Graph() { delete []Vertices; };
-	void out_neighbour(int); // ONLY for debug: print all neighbours for given vertex
+	void out_neighbours(int); // ONLY for debug: print all neighbours for given vertex
     int get_N() { return N; };
     int get_E() { return E; };
 

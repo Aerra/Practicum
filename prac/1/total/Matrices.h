@@ -1,5 +1,5 @@
-//This header describe different types of matrices that we use for CSR format
-// pragma once because include "Martices.h" you can find not only in one file
+// This header describes different types of matrices that we use for CSR format
+// pragma once because `include "Martices.h"` you can find not only in one file
 #pragma once
 #include <iostream>
 #include <omp.h>
@@ -36,7 +36,7 @@ struct Matrices {
         delete[] x;
         delete[] rev_diag;
     };
-    void fill(double &, bool=false); // debug = false double & for timings
+    void fill(double &, bool=false); // double & for timings, debug = false
 	// Args: tol, twcl (timing), timing for dot, timing for axpby,
 	// timing for SpMV, timing for VpV, debug = false
     void Conjugate_Gradient(double, double &, double &, double &, double &,

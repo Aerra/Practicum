@@ -10,33 +10,29 @@
 void print_info(Matrices *obj, bool verbose = false, \
 			   	std::string output_file = "") {
 	if (verbose) {
-		std::cout << "\nIA: ";			
+		std::cout << "\nIA: ";
 		for (int i = 0; i < obj->N1 + 1; i++) {
 				std::cout << obj->IA[i] << " ";
 		}		
-		std::cout << "\n";
-		std::cout << "JA: ";			
+		std::cout << "\nJA: ";
 		for (int i = 0; i < obj->E1; i++) {
 				std::cout << obj->JA[i] << " ";
 		}		
 		std::cout << "\nE: " << obj->E1;
 		std::cout << "\nN: " << obj->N1;
-		std::cout << "\nA: ";			
+		std::cout << "\nA: ";
 		for (int i = 0; i < obj->E1; i++) {
 				std::cout << obj->A[i] << " ";
 		}		
-		std::cout << "\n";
-		std::cout << "b: ";			
+		std::cout << "\nb: ";
 		for (int i = 0; i < obj->N1; i++) {
 				std::cout << obj->b[i] << " ";
 		}		
-		std::cout << "\n";
-		std::cout << "X: ";
+		std::cout << "\nX: ";
 		for (int i = 0; i < obj->N1; i++) {
 				std::cout << obj->x[i] << " ";
 		}		
-		std::cout << "\n";
-		std::cout << "res: " << obj->res << "\n";
+		std::cout << "\nres: " << obj->res << "\n";
 	}
 	if (output_file != (std::string)"") {
 		setlocale(LC_ALL, "rus");
@@ -45,34 +41,29 @@ void print_info(Matrices *obj, bool verbose = false, \
 			std::cout << "Can't open output file " << output_file << "\n"; 
 			return;
 		}
-		out_file << "IA: ";			
+		out_file << "IA: ";
 		for (int i = 0; i < obj->N1 + 1; i++) {
 				out_file << obj->IA[i] << " ";
 		}		
-		out_file << "\n";
-		out_file << "JA: ";			
+		out_file << "\nJA: ";
 		for (int i = 0; i < obj->E1; i++) {
 				out_file << obj->JA[i] << " ";
 		}		
-		out_file << "\n";
-		out_file << "N: " << obj->N1 << "\n";
+		out_file << "\nN: " << obj->N1;
 
-		out_file << "A: ";			
+		out_file << "\nA: ";
 		for (int i = 0; i < obj->E1; i++) {
 				out_file << obj->A[i] << " ";
 		}		
-		out_file << "\n";
-		out_file << "b: ";			
+		out_file << "\nb: ";
 		for (int i = 0; i < obj->N1; i++) {
 				out_file << obj->b[i] << " ";
 		}		
-		out_file << "\n";
-		out_file << "X: ";
+		out_file << "\nX: ";
 		for (int i = 0; i < obj->N1; i++) {
 				out_file << obj->x[i] << " ";
 		}		
-		out_file << "\n";
-		out_file << "res: " << obj->res << "\n";
+		out_file << "\nres: " << obj->res << "\n";
 
 		out_file.close();
 	}
@@ -154,16 +145,58 @@ int main(int argc, char *argv[]) {
 	
 	A.create_graph(Parser.GetNx(), Parser.GetNy(), Parser.GetK1(),
 					Parser.GetK2(), generate_time, Parser.GetDebug());
+
+	// evaluate size of A
+//	size_t A_size = sizeof A.get_N() + A.get_E();
+//	for (int i = 0; i < A.get_N(); i++) {
+//		A_size += sizeof A.Vertices[i];
+//	}
+//	std::cout << "SIZE A: " << A_size << "\n";
+
 	Matrices B(A.get_N(), A.get_E());
 	A.get_matrices(&B, generate_time, Parser.GetT(), Parser.GetDebug());
+	// evaluate size of B 
+//	size_t B_size = sizeof B.res + sizeof B.iterations + sizeof B.N1 + \
+//						  sizeof B.E1;
+//	for (int i = 0; i <= B.N1; i++) {
+//		B_size += sizeof B.IA[i];
+//	}
+//	for (int i = 0; i < B.E1; i++) {
+//		B_size += sizeof B.JA[i];
+//		B_size += sizeof B.A[i];
+//	}
+//	for (int i = 0; i < B.N1; i++) {
+//		B_size += sizeof B.b[i];
+//		B_size += sizeof B.x[i];
+//		B_size += sizeof B.rev_diag[i];
+//	}
+//	std::cout << "SIZE B: " << B_size << "\n";
+//	std::cout << "SIZE: " << B_size + A_size << "\n";
+
 	print_generate(A.get_N(), generate_time);
 
 	// FILL STAGE
 	double fill_time = 0;
 	B.fill(fill_time, Parser.GetDebug());
+	// evaluate size of B 
+//	size_t B_fill_size = sizeof B.res + sizeof B.iterations + sizeof B.N1 + \
+//						  sizeof B.E1;
+//	for (int i = 0; i <= B.N1; i++) {
+//		B_fill_size += sizeof B.IA[i];
+//	}
+//	for (int i = 0; i < B.E1; i++) {
+//		B_fill_size += sizeof B.JA[i];
+//		B_fill_size += sizeof B.A[i];
+//	}
+//	for (int i = 0; i < B.N1; i++) {
+//		B_fill_size += sizeof B.b[i];
+//		B_fill_size += sizeof B.x[i];
+//		B_fill_size += sizeof B.rev_diag[i];
+//	}
+//	std::cout << "SIZE B_fill: " << B_fill_size << "\n";
 	print_fill(fill_time);
 
-	// SOLVE
+	// SOLVE STAGE
 	double dot_time = 0;
 	double axpby_time = 0;
 	double SpMV_time = 0;
@@ -172,6 +205,23 @@ int main(int argc, char *argv[]) {
 	double solve_time = 0;
 	B.Conjugate_Gradient(Parser.Gettol(), solve_time, dot_time, axpby_time, 
 					SpMV_time, VpV_time, Parser.GetDebug());
+	// evaluate size of B 
+//	size_t B_solve_size = sizeof B.res + sizeof B.iterations + sizeof B.N1 + \
+//						  sizeof B.E1;
+//	for (int i = 0; i <= B.N1; i++) {
+//		B_solve_size += sizeof B.IA[i];
+//	}
+//	for (int i = 0; i < B.E1; i++) {
+//		B_solve_size += sizeof B.JA[i];
+//		B_solve_size += sizeof B.A[i];
+//	}
+//	for (int i = 0; i < B.N1; i++) {
+//		B_solve_size += sizeof B.b[i];
+//		B_solve_size += sizeof B.x[i];
+//		B_solve_size += sizeof B.rev_diag[i];
+//	}
+//
+//	std::cout << "SIZE B_solve: " << B_solve_size << "\n";
 	print_solve(B.iterations, B.res, solve_time, dot_time, axpby_time, 
 				SpMV_time, VpV_time);
 

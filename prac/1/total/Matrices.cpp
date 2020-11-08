@@ -60,6 +60,15 @@ void Matrices::Conjugate_Gradient(double tol, double &twcl, double &dot_twcl, \
     	std::cout << "\nres: " << res << "\n";
 	}
 
+//	size_t extra_array = 0;
+//	for (int i = 0; i < N1; i++) {
+//		extra_array += sizeof r[i];
+//		extra_array += sizeof z[i];
+//		extra_array += sizeof p[i];
+//		extra_array += sizeof q[i];
+//	}
+//	std::cout << "Extra: " << extra_array << "\n";
+
     delete []r;
     delete []z;
     delete []p;
@@ -81,9 +90,7 @@ void Matrices::fill(double &twcl, bool debug) {
                 diag = _j;
             } else {
                 A[_j] = cos(i*j+i+j);
-				// Still don't understand :(
-				//std::cout << A[_j] << " has ABS: " << abs(A[_j]) << " fabs " << fabs(A[_j]) << "\n";
-                sum += fabs(A[_j]); // WTF is going on?? Why abs != fabs ???
+                sum += fabs(A[_j]);
             }
         }
         A[diag] = 1.234*sum;
@@ -91,6 +98,8 @@ void Matrices::fill(double &twcl, bool debug) {
         b[i] = sin(i);
     }
     twcl += omp_get_wtime() - tbeg;
+
+//	std::cout << "Extra: " << sizeof(double) + sizeof(int) << "\n";
 
 	if (debug)
     	std::cout << "Fill time: " << omp_get_wtime() - tbeg << "\n";

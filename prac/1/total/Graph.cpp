@@ -2,14 +2,14 @@
 
 // Save in Matrix structure IA and JA for this graph
 void Graph::get_matrices(Matrices *obj, double &twcl, int trn, bool debug) {
-	// if count of vertices in graph <= count working threads => no ||
+	// no paralleling if count of vertices in graph <= count working threads
     double tbeg = omp_get_wtime();
 	if (N <= trn) {
+		obj->IA[0] = 0;
 		for (int i = 0; i < N; i++) {
-			Vertex cur = Vertices[i];
-			obj->IA[i+1] = obj->IA[i] + cur.count;
-			for (int j = 0; j < cur.count; j++) {
-				obj->JA[obj->IA[i] + j] = cur.neighbours[j];
+			obj->IA[i+1] = obj->IA[i] + Vertices[i].count;
+			for (int j = 0; j < Vertices[i].count; j++) {
+				obj->JA[obj->IA[i] + j] = Vertices[i].neighbours[j];
 			}
 	
 	    }
@@ -17,9 +17,9 @@ void Graph::get_matrices(Matrices *obj, double &twcl, int trn, bool debug) {
 	    return;
 	}
 	
-	// devide: every thread work with = N/trn + N%trn > 0 ? 1: 0 lines
-	//positions for thread's work area
+	// divide: every thread works with N/trn + N%trn > 0 ? 1 : 0 lines
 	int thread_lines = N/trn + ((N%trn > 0)?1:0);
+	// positions for thread's work area
 	int *thread_start = new int[trn+1];
 	for (int i = 0; i < trn; i++) {
 		thread_start[i] = i*thread_lines;
@@ -27,15 +27,15 @@ void Graph::get_matrices(Matrices *obj, double &twcl, int trn, bool debug) {
 	// just for understanding where work area ends
 	thread_start[trn] = N;
 
-	// shift related thread
+	// thread related shift
 	int *shift = new int[trn + 1];		
 
 	shift[0] = 0;
 	obj->IA[0] = 0; 
 	obj->JA[0] = 0;
-	// many level decomposition (from lecture 3)
+	// many levels decomposition (from lecture 3)
 	#pragma omp parallel for
-	// evaluate inside every thread like if it was not related matrices
+	// evaluate inside every thread like if it is not related matrices
 	for (int i = 0; i < trn; i++) {
 		obj->IA[thread_start[i]+1] = Vertices[thread_start[i]].count;
 		shift[i+1] = Vertices[thread_start[i]].count;
@@ -74,8 +74,8 @@ void Graph::get_matrices(Matrices *obj, double &twcl, int trn, bool debug) {
 	return;
 }
 
-// Only for debug
-void Graph::out_neighbour(int pos) {
+// for debug Only
+void Graph::out_neighbours(int pos) {
 	if (pos >= N) { return; }
 	std::cout << "vertex: " << pos << " -> (";
 	for (int i = 0; i < Vertices[pos].count - 1; i++) {
@@ -114,13 +114,13 @@ void Graph::create_graph(int Nx, int Ny, int K1, int K2, double &twcl, \
 			//  | /| 
 			//  |/ | - top cell
 			//  +--+
-			//  X - our pos (position)
-			//  down because X in the bottom of triangle (/)
+			//  X - our position
+			//  down because X at the cell's bottom
 			//  top in opposite down
 			int top_cell = i * Nx + j - 1;
 			int down_cell = top_cell - Nx + 1;
 
-			//right top corner
+			// right top corner
 			if (pos == Nx) {
  				Vertices[pos].neighbours[Vertices[pos].count++] = pos - 1;	
  				Vertices[pos].neighbours[Vertices[pos].count++] = pos;	
@@ -130,7 +130,7 @@ void Graph::create_graph(int Nx, int Ny, int K1, int K2, double &twcl, \
  				Vertices[pos].neighbours[Vertices[pos].count++] = pos + Nx + 1;	
 				continue;
 			}
-			//left bottom corner
+			// left bottom corner
 			if (pos == (Nx+1)*Ny) {
  				Vertices[pos].neighbours[Vertices[pos].count++] = pos - Nx - 1;	
 				if (j != Nx && i != 0 && (down_cell % (K1 + K2)) >= K1) {
@@ -140,7 +140,7 @@ void Graph::create_graph(int Nx, int Ny, int K1, int K2, double &twcl, \
  				Vertices[pos].neighbours[Vertices[pos].count++] = pos + 1;	
 				continue;
 			}
-			//right bottom corner
+			// right bottom corner
 			if (pos == N - 1) {
  				Vertices[pos].neighbours[Vertices[pos].count++] = pos - Nx - 1;	
  				Vertices[pos].neighbours[Vertices[pos].count++] = pos - 1;	
@@ -214,7 +214,7 @@ void Graph::create_graph(int Nx, int Ny, int K1, int K2, double &twcl, \
 		}
 	}
 
-	//evaluate E
+	// evaluate E
 	E = 0;
 	#pragma omp parallel for reduction(+:E)
 	for (int i = 0; i < N; i++) {
@@ -225,7 +225,7 @@ void Graph::create_graph(int Nx, int Ny, int K1, int K2, double &twcl, \
 	if (debug) {
 		std::cout << "Create Graph time: " << omp_get_wtime() - tbeg << "\n";
 		for (int i = 0; i < N; i++) {
-			out_neighbour(i);
+			out_neighbours(i);
 		}
 	}
 
